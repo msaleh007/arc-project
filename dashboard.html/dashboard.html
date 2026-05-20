@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arc Testnet Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0a; color: #fff; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+    .header { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 20px 40px; border-bottom: 1px solid #00d4ff33; display: flex; align-items: center; gap: 15px; }
+    .header h1 { font-size: 24px; color: #00d4ff; }
+    .header span { background: #00d4ff22; color: #00d4ff; padding: 4px 12px; border-radius: 20px; font-size: 12px; border: 1px solid #00d4ff44; }
+    .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+    .input-section { background: #111; border: 1px solid #222; border-radius: 12px; padding: 24px; margin-bottom: 30px; }
+    .input-section h2 { color: #00d4ff; margin-bottom: 16px; font-size: 16px; }
+    .input-row { display: flex; gap: 12px; }
+    input { flex: 1; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 12px 16px; border-radius: 8px; font-size: 14px; outline: none; }
+    input:focus { border-color: #00d4ff; }
+    button { background: #00d4ff; color: #000; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: 0.2s; }
+    button:hover { background: #00b8d9; }
+    button:disabled { background: #333; color: #666; cursor: not-allowed; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 30px; }
+    .card { background: #111; border: 1px solid #222; border-radius: 12px; padding: 20px; }
+    .card-label { color: #666; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+    .card-value { font-size: 28px; font-weight: 700; color: #00d4ff; }
+    .card-sub { color: #444; font-size: 12px; margin-top: 4px; }
+    .txns { background: #111; border: 1px solid #222; border-radius: 12px; padding: 24px; }
+    .txns h2 { color: #00d4ff; margin-bottom: 16px; font-size: 16px; }
+    .txn-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #1a1a1a; font-size: 13px; }
+    .txn-item:last-child { border-bottom: none; }
+    .txn-hash { color: #00d4ff; font-family: monospace; }
+    .txn-hash a { color: #00d4ff; text-decoration: none; }
+    .txn-hash a:hover { text-decoration: underline; }
+    .badge-success { background: #00ff8822; color: #00ff88; padding: 3px 10px; border-radius: 20px; font-size: 11px; }
+    .loading { text-align: center; color: #666; padding: 40px; }
+    .error { background: #ff000011; border: 1px solid #ff000033; color: #ff6666; padding: 12px 16px; border-radius: 8px; margin-top: 12px; font-size: 13px; }
+    .wallet-info { background: #00d4ff11; border: 1px solid #00d4ff33; border-radius: 8px; padding: 12px 16px; margin-top: 12px; font-size: 13px; color: #00d4ff; word-break: break-all; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚡ Arc Testnet Dashboard</h1>
+  <span>Chain ID: 5042002</span>
+  <span>USDC Gas</span>
+</div>
+
+<div class="container">
+  <div class="input-section">
+    <h2>🔍 Check Wallet</h2>
+    <div class="input-row">
+      <input type="text" id="walletInput" placeholder="Enter wallet address: 0x..." />
+      <button onclick="loadData()" id="checkBtn">Check</button>
+    </div>
+    <div id="walletInfo"></div>
+    <div id="errorMsg"></div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-label">USDC Balance</div>
+      <div class="card-value" id="balance">--</div>
+      <div class="card-sub">Testnet USDC</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Transactions</div>
+      <div class="card-value" id="txCount">--</div>
+      <div class="card-sub">Total on Arc</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Network</div>
+      <div class="card-value" style="font-size:18px; margin-top:4px;">Arc Testnet</div>
+      <div class="card-sub">Live ✅</div>
+    </div>
+  </div>
+
+  <div class="txns">
+    <h2>📋 Recent Transactions</h2>
+    <div id="txList"><div class="loading">Enter a wallet address above to load transactions</div></div>
+  </div>
+</div>
+
+<script>
+const RPC = "https://rpc.testnet.arc.network";
+const USDC = "0x3600000000000000000000000000000000000000";
+const EXPLORER = "https://testnet.arcscan.app";
+
+const usdcAbi = [
+  "function balanceOf(address) view returns (uint256)",
+  "function decimals() view returns (uint8)"
+];
+
+async function loadData() {
+  const addr = document.getElementById("walletInput").value.trim();
+  const btn = document.getElementById("checkBtn");
+  const errorDiv = document.getElementById("errorMsg");
+  const walletInfo = document.getElementById("walletInfo");
+
+  errorDiv.innerHTML = "";
+  walletInfo.innerHTML = "";
+
+  if (!addr || !addr.startsWith("0x") || addr.length !== 42) {
+    errorDiv.innerHTML = '<div class="error">❌ Please enter a valid wallet address (0x...)</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Loading...";
+  document.getElementById("balance").textContent = "...";
+  document.getElementById("txCount").textContent = "...";
+  document.getElementById("txList").innerHTML = '<div class="loading">Loading...</div>';
+
+  try {
+    const provider = new ethers.JsonRpcProvider(RPC);
+    const usdc = new ethers.Contract(USDC, usdcAbi, provider);
+
+    const [balance, decimals, txCount] = await Promise.all([
+      usdc.balanceOf(addr),
+      usdc.decimals(),
+      provider.getTransactionCount(addr)
+    ]);
+
+    const formattedBalance = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(2);
+    document.getElementById("balance").textContent = formattedBalance;
+    document.getElementById("txCount").textContent = txCount;
+
+    walletInfo.innerHTML = `<div class="wallet-info">✅ Wallet: ${addr} | <a href="${EXPLORER}/address/${addr}" target="_blank" style="color:#00d4ff">View on ArcScan ↗</a></div>`;
+
+    // Load recent transactions from ArcScan API
+    const res = await fetch(`https://testnet.arcscan.app/api/v2/addresses/${addr}/transactions?limit=5`);
+    const data = await res.json();
+
+    if (data.items && data.items.length > 0) {
+      let html = "";
+      data.items.forEach(tx => {
+        const hash = tx.hash;
+        const short = hash.slice(0, 10) + "..." + hash.slice(-6);
+        const date = new Date(tx.timestamp).toLocaleString();
+        html += `
+          <div class="txn-item">
+            <div class="txn-hash"><a href="${EXPLORER}/tx/${hash}" target="_blank">${short}</a></div>
+            <div style="color:#666; font-size:12px">${date}</div>
+            <div class="badge-success">Success</div>
+          </div>`;
+      });
+      document.getElementById("txList").innerHTML = html;
+    } else {
+      document.getElementById("txList").innerHTML = '<div class="loading">No transactions found</div>';
+    }
+
+  } catch (err) {
+    errorDiv.innerHTML = `<div class="error">❌ Error: ${err.message}</div>`;
+    document.getElementById("txList").innerHTML = '<div class="loading">Failed to load</div>';
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Check";
+}
+
+document.getElementById("walletInput").addEventListener("keypress", function(e) {
+  if (e.key === "Enter") loadData();
+});
+</script>
+</body>
+</html>
