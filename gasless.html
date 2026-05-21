@@ -1,0 +1,210 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arc Gasless Transfer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0a; color: #fff; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+    .header { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 20px 40px; border-bottom: 1px solid #00ff8833; display: flex; align-items: center; gap: 15px; }
+    .header h1 { font-size: 24px; color: #00ff88; }
+    .header span { background: #00ff8822; color: #00ff88; padding: 4px 12px; border-radius: 20px; font-size: 12px; border: 1px solid #00ff8844; }
+    .container { max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    .card { background: #111; border: 1px solid #222; border-radius: 16px; padding: 28px; margin-bottom: 20px; }
+    .card h2 { color: #00ff88; margin-bottom: 20px; font-size: 16px; }
+    .connect-btn { width: 100%; background: #00ff88; color: #000; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+    .connect-btn:hover { background: #00dd77; }
+    .wallet-info { background: #00ff8811; border: 1px solid #00ff8833; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #00ff88; word-break: break-all; margin-top: 12px; }
+    .token-select { display: flex; gap: 10px; margin-bottom: 20px; }
+    .token-btn { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #1a1a1a; color: #666; cursor: pointer; font-size: 14px; font-weight: 600; transition: 0.2s; }
+    .token-btn.active { border-color: #00ff88; color: #00ff88; background: #00ff8811; }
+    label { color: #666; font-size: 12px; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+    input { width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 12px 16px; border-radius: 8px; font-size: 14px; outline: none; margin-bottom: 16px; }
+    input:focus { border-color: #00ff88; }
+    .balance-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .balance-text { color: #666; font-size: 13px; }
+    .balance-amount { color: #00ff88; font-size: 13px; font-weight: 600; }
+    .send-btn { width: 100%; background: #00ff88; color: #000; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+    .send-btn:hover { background: #00dd77; }
+    .send-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+    .success { background: #00ff8811; border: 1px solid #00ff8833; color: #00ff88; padding: 12px 16px; border-radius: 8px; margin-top: 12px; font-size: 13px; }
+    .error { background: #ff000011; border: 1px solid #ff000033; color: #ff6666; padding: 12px 16px; border-radius: 8px; margin-top: 12px; font-size: 13px; }
+    .fee-info { background: #1a1a1a; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; font-size: 13px; }
+    .fee-label { color: #666; }
+    .fee-value { color: #00ff88; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚡ Arc Gasless Transfer</h1>
+  <span>Near-Zero Fees</span>
+  <span>Arc Testnet</span>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <h2>🔗 Connect Wallet</h2>
+    <button class="connect-btn" onclick="connectWallet()" id="connectBtn">Connect MetaMask</button>
+    <div id="walletInfo"></div>
+  </div>
+
+  <div class="card" id="transferCard" style="display:none">
+    <h2>💸 Send Stablecoin</h2>
+
+    <div class="token-select">
+      <button class="token-btn active" id="usdcBtn" onclick="selectToken('USDC')">USDC</button>
+      <button class="token-btn" id="eurcBtn" onclick="selectToken('EURC')">EURC</button>
+    </div>
+
+    <div class="balance-row">
+      <span class="balance-text">Your Balance:</span>
+      <span class="balance-amount" id="tokenBalance">-- </span>
+    </div>
+
+    <label>Recipient Address</label>
+    <input type="text" id="recipient" placeholder="0x..." />
+
+    <label>Amount</label>
+    <input type="number" id="amount" placeholder="0.00" min="0" step="0.01" />
+
+    <div class="fee-info">
+      <span class="fee-label">⛽ Estimated Gas Fee</span>
+      <span class="fee-value">~0.001 USDC</span>
+    </div>
+
+    <button class="send-btn" onclick="sendTransfer()" id="sendBtn">Send</button>
+    <div id="txResult"></div>
+  </div>
+
+</div>
+
+<script>
+const RPC = "https://rpc.testnet.arc.network";
+const CHAIN_ID = 5042002;
+const EXPLORER = "https://testnet.arcscan.app";
+
+const TOKENS = {
+  USDC: "0x3600000000000000000000000000000000000000",
+  EURC: "0x3700000000000000000000000000000000000000"
+};
+
+const ERC20_ABI = [
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function balanceOf(address) view returns (uint256)",
+  "function decimals() view returns (uint8)"
+];
+
+let provider, signer, currentToken = "USDC";
+
+async function connectWallet() {
+  if (!window.ethereum) {
+    alert("MetaMask not found! Please install MetaMask.");
+    return;
+  }
+
+  try {
+    await window.ethereum.request({ method: "eth_requestAccounts" });
+    provider = new ethers.BrowserProvider(window.ethereum);
+
+    const network = await provider.getNetwork();
+    if (network.chainId !== BigInt(CHAIN_ID)) {
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: "0x4CE5A6A" }]
+        });
+      } catch {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: "0x4CE5A6A",
+            chainName: "Arc Testnet",
+            rpcUrls: [RPC],
+            nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
+            blockExplorerUrls: [EXPLORER]
+          }]
+        });
+      }
+      provider = new ethers.BrowserProvider(window.ethereum);
+    }
+
+    signer = await provider.getSigner();
+    const address = await signer.getAddress();
+
+    document.getElementById("connectBtn").textContent = address.slice(0,6) + "..." + address.slice(-4);
+    document.getElementById("connectBtn").style.background = "#00ff8833";
+    document.getElementById("connectBtn").style.color = "#00ff88";
+    document.getElementById("connectBtn").style.border = "1px solid #00ff88";
+    document.getElementById("walletInfo").innerHTML = `<div class="wallet-info">✅ Connected: ${address}</div>`;
+    document.getElementById("transferCard").style.display = "block";
+
+    await loadBalance();
+  } catch (err) {
+    document.getElementById("walletInfo").innerHTML = `<div class="error">❌ ${err.message}</div>`;
+  }
+}
+
+async function selectToken(token) {
+  currentToken = token;
+  document.getElementById("usdcBtn").classList.toggle("active", token === "USDC");
+  document.getElementById("eurcBtn").classList.toggle("active", token === "EURC");
+  await loadBalance();
+}
+
+async function loadBalance() {
+  try {
+    const address = await signer.getAddress();
+    const token = new ethers.Contract(TOKENS[currentToken], ERC20_ABI, provider);
+    const [balance, decimals] = await Promise.all([token.balanceOf(address), token.decimals()]);
+    const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(2);
+    document.getElementById("tokenBalance").textContent = `${formatted} ${currentToken}`;
+  } catch {}
+}
+
+async function sendTransfer() {
+  const recipient = document.getElementById("recipient").value.trim();
+  const amount = document.getElementById("amount").value.trim();
+  const resultDiv = document.getElementById("txResult");
+  const sendBtn = document.getElementById("sendBtn");
+
+  resultDiv.innerHTML = "";
+
+  if (!recipient || !recipient.startsWith("0x") || recipient.length !== 42) {
+    resultDiv.innerHTML = '<div class="error">❌ Invalid recipient address!</div>';
+    return;
+  }
+  if (!amount || parseFloat(amount) <= 0) {
+    resultDiv.innerHTML = '<div class="error">❌ Enter a valid amount!</div>';
+    return;
+  }
+
+  sendBtn.disabled = true;
+  sendBtn.textContent = "Sending...";
+
+  try {
+    const token = new ethers.Contract(TOKENS[currentToken], ERC20_ABI, signer);
+    const decimals = await token.decimals();
+    const parsedAmount = ethers.parseUnits(amount, decimals);
+
+    const tx = await token.transfer(recipient, parsedAmount);
+    resultDiv.innerHTML = `<div class="success">⏳ Transaction sent! Hash: <a href="${EXPLORER}/tx/${tx.hash}" target="_blank" style="color:#00ff88">${tx.hash.slice(0,10)}...${tx.hash.slice(-6)}</a></div>`;
+
+    await tx.wait();
+    resultDiv.innerHTML = `<div class="success">✅ Transfer Complete! <a href="${EXPLORER}/tx/${tx.hash}" target="_blank" style="color:#00ff88">View on ArcScan ↗</a></div>`;
+
+    await loadBalance();
+  } catch (err) {
+    resultDiv.innerHTML = `<div class="error">❌ ${err.message}</div>`;
+  }
+
+  sendBtn.disabled = false;
+  sendBtn.textContent = "Send";
+}
+</script>
+</body>
+</html>
