@@ -300,6 +300,70 @@
         "IERC20",
         "USDCPayment"
       ]
+    },
+    "C:\\Users\\Adeel Zafar\\arc-project\\contracts\\ArcNFT.sol": {
+      "lastModificationDate": 1779554000419,
+      "contentHash": "48c9927a8ec50a4ac76e617f8bb851a2",
+      "sourceName": "contracts/ArcNFT.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [],
+      "artifacts": []
+    },
+    "C:\\Users\\Adeel Zafar\\arc-project\\contracts\\GiwaContract.sol": {
+      "lastModificationDate": 1779483347028,
+      "contentHash": "48c9927a8ec50a4ac76e617f8bb851a2",
+      "sourceName": "contracts/GiwaContract.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [],
+      "artifacts": []
     }
   }
 }
