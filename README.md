@@ -24,4 +24,4 @@ Smart contracts + DApps built on Arc Testnet by ArcBuilders
 
 ## Builder
 - GitHub: msaleh007
-- Wallet: 0xc75BfBe5f17e0E0003feA3c3EDD3d02C53BfeD07
+- Wallet: 0xc75BfBe5f17e0E0003feA3c3EDD3d02C53BfeD07## May 27 2026 - Daily Activity 
