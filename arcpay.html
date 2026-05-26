@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArcPay — Instant USDC Payments on Arc</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080C14;
+    --bg2: #0D1320;
+    --card: #111827;
+    --card2: #1a2235;
+    --accent: #00D4FF;
+    --accent2: #0099CC;
+    --green: #00FF88;
+    --green2: #00CC6A;
+    --white: #F0F4FF;
+    --gray: #8892A4;
+    --border: rgba(0,212,255,0.15);
+    --border2: rgba(0,255,136,0.15);
+    --glow: rgba(0,212,255,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glow orbs */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    right: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* HEADER */
+  header {
+    padding: 28px 0;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(8,12,20,0.9);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--green));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .badge {
+    background: rgba(0,212,255,0.1);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .connect-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--accent);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .connect-btn:hover {
+    background: var(--glow);
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(0,212,255,0.15);
+  }
+
+  .connect-btn.connected {
+    border-color: var(--green);
+    color: var(--green);
+    background: rgba(0,255,136,0.05);
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* HERO */
+  .hero {
+    padding: 80px 0 60px;
+    text-align: center;
+  }
+
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,212,255,0.05);
+    border: 1px solid var(--border);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -2px;
+    margin-bottom: 20px;
+  }
+
+  .hero h1 .highlight {
+    background: linear-gradient(135deg, var(--accent), var(--green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero p {
+    color: var(--gray);
+    font-size: 16px;
+    max-width: 500px;
+    margin: 0 auto 40px;
+    line-height: 1.7;
+  }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    padding: 24px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 60px;
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 32px;
+    width: fit-content;
+  }
+
+  .tab {
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--gray);
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+
+  .tab.active {
+    background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,255,136,0.1));
+    color: var(--white);
+    border: 1px solid var(--border);
+  }
+
+  /* MAIN GRID */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  @media (max-width: 768px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .stats-bar { gap: 20px; }
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .card:hover::before { opacity: 1; }
+  .card:hover {
+    border-color: rgba(0,212,255,0.3);
+    box-shadow: 0 8px 40px rgba(0,212,255,0.05);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .card-icon.blue { background: rgba(0,212,255,0.1); border: 1px solid var(--border); }
+  .card-icon.green { background: rgba(0,255,136,0.1); border: 1px solid var(--border2); }
+  .card-icon.orange { background: rgba(255,165,0,0.1); border: 1px solid rgba(255,165,0,0.2); }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--white);
+  }
+
+  .card-subtitle {
+    font-size: 12px;
+    color: var(--gray);
+    margin-top: 2px;
+  }
+
+  /* FORM */
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  label {
+    display: block;
+    font-size: 11px;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: var(--white);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    transition: all 0.2s;
+    outline: none;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,212,255,0.08);
+  }
+
+  input::placeholder { color: var(--gray); }
+
+  select option { background: var(--card); }
+
+  .token-select {
+    display: flex;
+    gap: 8px;
+  }
+
+  .token-select input { flex: 1; }
+
+  .token-badge {
+    background: rgba(0,212,255,0.1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: var(--accent);
+    font-size: 13px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+    margin-top: 8px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: var(--bg);
+    box-shadow: 0 4px 20px rgba(0,212,255,0.2);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 30px rgba(0,212,255,0.3);
+  }
+
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-green {
+    background: linear-gradient(135deg, var(--green), var(--green2));
+    color: var(--bg);
+    box-shadow: 0 4px 20px rgba(0,255,136,0.2);
+  }
+
+  .btn-green:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 30px rgba(0,255,136,0.3);
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--gray);
+  }
+
+  .btn-outline:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* QR CODE */
+  .qr-section {
+    text-align: center;
+    padding: 20px;
+    background: var(--bg2);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    margin: 16px 0;
+  }
+
+  .qr-placeholder {
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 16px;
+    background: var(--white);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .qr-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+    padding: 12px;
+    width: 100%;
+    height: 100%;
+  }
+
+  .qr-cell {
+    border-radius: 2px;
+  }
+
+  .qr-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent);
+  }
+
+  .qr-label {
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 4px;
+  }
+
+  .wallet-address {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 11px;
+    color: var(--gray);
+    word-break: break-all;
+    margin: 8px 0;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .wallet-address:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* TRANSACTION LIST */
+  .tx-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  .tx-list::-webkit-scrollbar { width: 4px; }
+  .tx-list::-webkit-scrollbar-track { background: transparent; }
+  .tx-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .tx-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: all 0.2s;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .tx-item:hover { border-color: rgba(0,212,255,0.3); }
+
+  .tx-left { display: flex; align-items: center; gap: 12px; }
+
+  .tx-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(0,255,136,0.1);
+    border: 1px solid var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .tx-info { }
+  .tx-from { font-size: 13px; color: var(--white); }
+  .tx-time { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
+  .tx-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--green);
+  }
+
+  .tx-status {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+  }
+
+  .tx-status.confirmed {
+    background: rgba(0,255,136,0.1);
+    color: var(--green);
+    border: 1px solid var(--border2);
+  }
+
+  .tx-status.pending {
+    background: rgba(255,165,0,0.1);
+    color: #FFA500;
+    border: 1px solid rgba(255,165,0,0.2);
+  }
+
+  /* FULL WIDTH CARD */
+  .card-full {
+    grid-column: 1 / -1;
+  }
+
+  /* NETWORK INFO */
+  .network-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(0,255,136,0.05);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: var(--green);
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--card);
+    border: 1px solid var(--green);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--green);
+    z-index: 1000;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  }
+
+  .toast.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+    margin-top: 60px;
+    text-align: center;
+    color: var(--gray);
+    font-size: 12px;
+  }
+
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 16px;
+  }
+
+  .footer-links a {
+    color: var(--gray);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--accent); }
+
+  /* Loading animation */
+  .loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0,212,255,0.3);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Tab panels */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 4px;
+    background: var(--bg2);
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 12px 0;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  .amount-presets {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .preset-btn {
+    padding: 6px 14px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--gray);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .preset-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="container">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">⚡</div>
+        Arc<span>Pay</span>
+        <div class="badge">Testnet</div>
+      </div>
+      <button class="connect-btn" id="connectBtn" onclick="connectWallet()">
+        <span id="connectIcon">◉</span>
+        <span id="connectText">Connect Wallet</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="container">
+  <div class="hero">
+    <div class="hero-tag">⚡ Powered by Arc Network</div>
+    <h1>Accept <span class="highlight">USDC Payments</span><br>Instantly On-Chain</h1>
+    <p>Merchants & creators accept decentralized USDC payments. Settled on Arc Network in under 1 second.</p>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-val" id="totalVolume">$0.00</div>
+      <div class="stat-label">Total Volume</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val" id="totalTxns">0</div>
+      <div class="stat-label">Transactions</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">&lt;1s</div>
+      <div class="stat-label">Settlement Time</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val">$0.001</div>
+      <div class="stat-label">Gas Fee</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('merchant')">🏪 Merchant</button>
+    <button class="tab" onclick="switchTab('customer')">💳 Customer Pay</button>
+    <button class="tab" onclick="switchTab('history')">📊 History</button>
+  </div>
+
+  <!-- MERCHANT TAB -->
+  <div id="tab-merchant" class="tab-panel active">
+    <div class="main-grid">
+      <!-- Create Payment Link -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon blue">🔗</div>
+          <div>
+            <div class="card-title">Create Payment Link</div>
+            <div class="card-subtitle">Generate invoice for customer</div>
+          </div>
+        </div>
+
+        <div class="network-info">
+          <div class="dot"></div>
+          Arc Testnet — Chain ID 5042002
+        </div>
+
+        <div class="form-group">
+          <label>Your Wallet Address</label>
+          <input type="text" id="merchantWallet" placeholder="0xc75BfBe5f17e0E000..." />
+        </div>
+
+        <div class="form-group">
+          <label>Product / Service Name</label>
+          <input type="text" id="productName" placeholder="e.g. Web Design Service" />
+        </div>
+
+        <div class="form-group">
+          <label>Amount (USDC)</label>
+          <div class="amount-presets">
+            <button class="preset-btn" onclick="setAmount(10)">10</button>
+            <button class="preset-btn" onclick="setAmount(25)">25</button>
+            <button class="preset-btn" onclick="setAmount(50)">50</button>
+            <button class="preset-btn" onclick="setAmount(100)">100</button>
+            <button class="preset-btn" onclick="setAmount(500)">500</button>
+          </div>
+          <div class="token-select">
+            <input type="number" id="paymentAmount" placeholder="0.00" min="0" step="0.01" />
+            <div class="token-badge">💵 USDC</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Note (Optional)</label>
+          <input type="text" id="paymentNote" placeholder="Invoice #001" />
+        </div>
+
+        <button class="btn btn-primary" onclick="generatePayment()">⚡ Generate Payment Link</button>
+      </div>
+
+      <!-- QR & Payment Info -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon green">📲</div>
+          <div>
+            <div class="card-title">Payment Request</div>
+            <div class="card-subtitle">Share with customer</div>
+          </div>
+        </div>
+
+        <div class="qr-section" id="qrSection">
+          <div id="qrPlaceholder" style="color: var(--gray); font-size: 13px; padding: 40px 0;">
+            🔗 Generate a payment link<br>to see QR code
+          </div>
+          <div id="qrContent" style="display:none;">
+            <div class="qr-amount" id="qrAmount">$0.00 USDC</div>
+            <div class="qr-label" id="qrProduct">—</div>
+            <div style="margin: 16px auto; width: 140px; height: 140px; background: white; border-radius: 8px; padding: 10px; display: grid; grid-template-columns: repeat(7,1fr); gap: 2px;" id="qrGrid"></div>
+            <div class="qr-label">Scan to pay with any EVM wallet</div>
+          </div>
+        </div>
+
+        <div id="paymentLink" style="display:none;">
+          <div class="wallet-address" id="walletDisplay" onclick="copyAddress()">
+            <span id="walletText">—</span>
+            <span>📋</span>
+          </div>
+
+          <div class="divider"></div>
+
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--gray); margin-bottom: 8px;">
+            <span>Network</span>
+            <span style="color: var(--accent)">Arc Testnet</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--gray); margin-bottom: 8px;">
+            <span>Token</span>
+            <span style="color: var(--white)">USDC</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--gray); margin-bottom: 16px;">
+            <span>Settlement</span>
+            <span style="color: var(--green)">&lt;1 second</span>
+          </div>
+
+          <button class="btn btn-outline" onclick="copyLink()" style="width:100%; margin-top:0;">📋 Copy Payment Link</button>
+        </div>
+      </div>
+
+      <!-- Recent Payments -->
+      <div class="card card-full">
+        <div class="card-header">
+          <div class="card-icon orange">💰</div>
+          <div>
+            <div class="card-title">Recent Payments Received</div>
+            <div class="card-subtitle">Live on Arc Testnet</div>
+          </div>
+        </div>
+
+        <div class="tx-list" id="txList">
+          <div style="text-align: center; padding: 30px; color: var(--gray); font-size: 13px;">
+            No payments yet. Generate a payment link to get started.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER TAB -->
+  <div id="tab-customer" class="tab-panel">
+    <div class="main-grid">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon blue">💳</div>
+          <div>
+            <div class="card-title">Send Payment</div>
+            <div class="card-subtitle">Pay merchant with USDC</div>
+          </div>
+        </div>
+
+        <div class="network-info">
+          <div class="dot"></div>
+          Connected to Arc Testnet
+        </div>
+
+        <div class="form-group">
+          <label>Merchant Wallet Address</label>
+          <input type="text" id="recipientWallet" placeholder="0x..." />
+        </div>
+
+        <div class="form-group">
+          <label>Amount (USDC)</label>
+          <div class="amount-presets">
+            <button class="preset-btn" onclick="setCustomerAmount(10)">10</button>
+            <button class="preset-btn" onclick="setCustomerAmount(25)">25</button>
+            <button class="preset-btn" onclick="setCustomerAmount(50)">50</button>
+            <button class="preset-btn" onclick="setCustomerAmount(100)">100</button>
+          </div>
+          <div class="token-select">
+            <input type="number" id="sendAmount" placeholder="0.00" min="0" step="0.01" />
+            <div class="token-badge">💵 USDC</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Your Wallet Balance</label>
+          <input type="text" id="customerBalance" value="Loading..." readonly style="color: var(--accent);" />
+        </div>
+
+        <div class="form-group">
+          <label>Message (Optional)</label>
+          <input type="text" id="paymentMessage" placeholder="Payment for invoice #001" />
+        </div>
+
+        <button class="btn btn-green" onclick="sendPayment()">⚡ Send Payment Now</button>
+
+        <div style="margin-top: 16px; padding: 12px; background: var(--bg2); border-radius: 8px; border: 1px solid var(--border); font-size: 12px; color: var(--gray);">
+          ⚡ Payments settle on Arc in &lt;1 second with minimal gas fees
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon green">✅</div>
+          <div>
+            <div class="card-title">Transaction Status</div>
+            <div class="card-subtitle">Track your payment</div>
+          </div>
+        </div>
+
+        <div id="txStatus" style="text-align: center; padding: 40px; color: var(--gray); font-size: 13px;">
+          Send a payment to see transaction status
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="tab-history" class="tab-panel">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon blue">📊</div>
+        <div>
+          <div class="card-title">Transaction History</div>
+          <div class="card-subtitle">All ArcPay transactions</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 24px;">
+        <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center;">
+          <div style="font-family: Syne; font-size: 20px; font-weight: 700; color: var(--accent);" id="histTotal">$0.00</div>
+          <div style="font-size: 11px; color: var(--gray); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px;">Total Received</div>
+        </div>
+        <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center;">
+          <div style="font-family: Syne; font-size: 20px; font-weight: 700; color: var(--green);" id="histCount">0</div>
+          <div style="font-size: 11px; color: var(--gray); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px;">Payments</div>
+        </div>
+        <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; text-align: center;">
+          <div style="font-family: Syne; font-size: 20px; font-weight: 700; color: #FFA500;" id="histAvg">$0.00</div>
+          <div style="font-size: 11px; color: var(--gray); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px;">Avg Payment</div>
+        </div>
+      </div>
+
+      <div class="tx-list" id="historyList" style="max-height: 400px;">
+        <div style="text-align: center; padding: 30px; color: var(--gray); font-size: 13px;">
+          No transactions yet
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="#">Docs</a>
+      <a href="#">GitHub</a>
+      <a href="#">Arc Network</a>
+      <a href="#">Discord</a>
+    </div>
+    <div>Built by <strong style="color: var(--accent)">ArcBuilders</strong> on Arc Testnet · Wallet: 0xc75B...eD07</div>
+  </div>
+</footer>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span id="toastIcon">✅</span>
+  <span id="toastMsg">Copied!</span>
+</div>
+
+<script>
+  let transactions = [];
+  let walletConnected = false;
+  let walletAddress = '';
+
+  // Connect Wallet
+  async function connectWallet() {
+    if (typeof window.ethereum === 'undefined') {
+      showToast('⚠️', 'MetaMask not found! Please install it.');
+      return;
+    }
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      walletAddress = accounts[0];
+      walletConnected = true;
+      const btn = document.getElementById('connectBtn');
+      btn.classList.add('connected');
+      document.getElementById('connectIcon').innerHTML = '<div class="dot"></div>';
+      document.getElementById('connectText').textContent = walletAddress.slice(0,6) + '...' + walletAddress.slice(-4);
+      document.getElementById('merchantWallet').value = walletAddress;
+      document.getElementById('customerBalance').value = '200.00 USDC';
+      showToast('✅', 'Wallet connected successfully!');
+    } catch (e) {
+      showToast('❌', 'Connection rejected');
+    }
+  }
+
+  // Switch Tabs
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach((t,i) => {
+      t.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+  }
+
+  // Set amount presets
+  function setAmount(val) {
+    document.getElementById('paymentAmount').value = val;
+  }
+
+  function setCustomerAmount(val) {
+    document.getElementById('sendAmount').value = val;
+  }
+
+  // Generate QR grid
+  function generateQR() {
+    const grid = document.getElementById('qrGrid');
+    grid.innerHTML = '';
+    for (let i = 0; i < 49; i++) {
+      const cell = document.createElement('div');
+      cell.style.borderRadius = '2px';
+      cell.style.background = Math.random() > 0.5 ? '#000' : '#fff';
+      // Corners
+      if ((i < 7 || (i >= 14 && i < 21) || (i >= 28 && i < 35)) && i % 7 < 3) {
+        cell.style.background = '#000';
+      }
+      grid.appendChild(cell);
+    }
+  }
+
+  // Generate Payment
+  function generatePayment() {
+    const wallet = document.getElementById('merchantWallet').value;
+    const amount = document.getElementById('paymentAmount').value;
+    const product = document.getElementById('productName').value;
+
+    if (!wallet || !amount) {
+      showToast('⚠️', 'Please fill wallet address and amount!');
+      return;
+    }
+
+    document.getElementById('qrPlaceholder').style.display = 'none';
+    document.getElementById('qrContent').style.display = 'block';
+    document.getElementById('qrAmount').textContent = `$${parseFloat(amount).toFixed(2)} USDC`;
+    document.getElementById('qrProduct').textContent = product || 'ArcPay Payment';
+    document.getElementById('paymentLink').style.display = 'block';
+    document.getElementById('walletText').textContent = wallet.slice(0,20) + '...' + wallet.slice(-6);
+
+    generateQR();
+    showToast('✅', 'Payment link generated!');
+
+    // Simulate incoming payment after 5s
+    setTimeout(() => {
+      addTransaction(wallet, amount, product);
+    }, 5000);
+  }
+
+  // Add Transaction
+  function addTransaction(to, amount, product) {
+    const tx = {
+      from: '0x' + Math.random().toString(16).substr(2, 8) + '...' + Math.random().toString(16).substr(2, 4),
+      amount: parseFloat(amount),
+      product: product || 'ArcPay Payment',
+      time: new Date(),
+      hash: '0x' + Math.random().toString(16).substr(2, 16),
+      status: 'confirmed'
+    };
+    transactions.unshift(tx);
+    updateTxList();
+    updateStats();
+    showToast('💰', `Received $${amount} USDC!`);
+  }
+
+  // Update TX List
+  function updateTxList() {
+    const list = document.getElementById('txList');
+    const histList = document.getElementById('historyList');
+
+    if (transactions.length === 0) return;
+
+    const html = transactions.map(tx => `
+      <div class="tx-item">
+        <div class="tx-left">
+          <div class="tx-icon">💸</div>
+          <div class="tx-info">
+            <div class="tx-from">${tx.from}</div>
+            <div class="tx-time">${tx.product} · ${tx.time.toLocaleTimeString()}</div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div class="tx-amount">+$${tx.amount.toFixed(2)}</div>
+          <div class="tx-status confirmed">confirmed</div>
+        </div>
+      </div>
+    `).join('');
+
+    list.innerHTML = html;
+    histList.innerHTML = html;
+  }
+
+  // Update Stats
+  function updateStats() {
+    const total = transactions.reduce((s, t) => s + t.amount, 0);
+    const count = transactions.length;
+    const avg = count > 0 ? total / count : 0;
+
+    document.getElementById('totalVolume').textContent = '$' + total.toFixed(2);
+    document.getElementById('totalTxns').textContent = count;
+    document.getElementById('histTotal').textContent = '$' + total.toFixed(2);
+    document.getElementById('histCount').textContent = count;
+    document.getElementById('histAvg').textContent = '$' + avg.toFixed(2);
+  }
+
+  // Send Payment
+  async function sendPayment() {
+    const recipient = document.getElementById('recipientWallet').value;
+    const amount = document.getElementById('sendAmount').value;
+
+    if (!recipient || !amount) {
+      showToast('⚠️', 'Fill recipient address and amount!');
+      return;
+    }
+
+    if (!walletConnected) {
+      showToast('⚠️', 'Connect wallet first!');
+      return;
+    }
+
+    const statusDiv = document.getElementById('txStatus');
+    statusDiv.innerHTML = `
+      <div style="padding: 20px;">
+        <div class="loading" style="margin: 0 auto 16px;"></div>
+        <div style="color: var(--accent); font-size: 14px; margin-bottom: 8px;">Processing Payment...</div>
+        <div style="color: var(--gray); font-size: 12px;">Confirming on Arc Network</div>
+        <div class="progress-bar" style="margin-top: 16px;">
+          <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+      </div>
+    `;
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 20;
+      const fill = document.getElementById('progressFill');
+      if (fill) fill.style.width = progress + '%';
+      if (progress >= 100) {
+        clearInterval(interval);
+        const hash = '0x' + Math.random().toString(16).substr(2, 20);
+        statusDiv.innerHTML = `
+          <div style="padding: 20px; text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+            <div style="font-family: Syne; font-size: 20px; font-weight: 700; color: var(--green); margin-bottom: 8px;">Payment Sent!</div>
+            <div style="color: var(--gray); font-size: 12px; margin-bottom: 16px;">$${parseFloat(amount).toFixed(2)} USDC sent to ${recipient.slice(0,8)}...</div>
+            <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 11px; color: var(--gray); word-break: break-all;">
+              TX: ${hash}
+            </div>
+            <div style="margin-top: 12px; font-size: 12px; color: var(--green);">⚡ Settled in &lt;1 second</div>
+          </div>
+        `;
+        showToast('✅', `$${amount} USDC sent successfully!`);
+      }
+    }, 200);
+  }
+
+  // Copy functions
+  function copyAddress() {
+    const wallet = document.getElementById('merchantWallet').value;
+    navigator.clipboard.writeText(wallet);
+    showToast('📋', 'Address copied!');
+  }
+
+  function copyLink() {
+    const wallet = document.getElementById('merchantWallet').value;
+    const amount = document.getElementById('paymentAmount').value;
+    const link = `arcpay://pay?to=${wallet}&amount=${amount}&token=USDC&chain=arc-testnet`;
+    navigator.clipboard.writeText(link);
+    showToast('📋', 'Payment link copied!');
+  }
+
+  // Toast
+  function showToast(icon, msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toastIcon').textContent = icon;
+    document.getElementById('toastMsg').textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  // Pre-fill demo data
+  window.onload = () => {
+    document.getElementById('merchantWallet').value = '0xc75BfBe5f17e0E0003feA3c3EDD3d02C53BfeD07';
+
+    // Add demo transactions
+    setTimeout(() => {
+      const demoTxs = [
+        { amount: 25, product: 'Web Design Service' },
+        { amount: 50, product: 'Smart Contract Audit' },
+        { amount: 10, product: 'Consultation Fee' },
+      ];
+      demoTxs.forEach(tx => {
+        transactions.push({
+          from: '0x' + Math.random().toString(16).substr(2, 8) + '...' + Math.random().toString(16).substr(2, 4),
+          amount: tx.amount,
+          product: tx.product,
+          time: new Date(Date.now() - Math.random() * 3600000),
+          hash: '0x' + Math.random().toString(16).substr(2, 16),
+          status: 'confirmed'
+        });
+      });
+      updateTxList();
+      updateStats();
+    }, 500);
+  };
+</script>
+</body>
+</html>
