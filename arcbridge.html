@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArcBridge — CCTP Cross-Chain USDC Bridge</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0118;
+    --bg2: #130726;
+    --card: #1A0D33;
+    --card2: #241145;
+    --purple: #A855F7;
+    --purple2: #7C3AED;
+    --pink: #EC4899;
+    --cyan: #06B6D4;
+    --green: #10B981;
+    --white: #F5F3FF;
+    --gray: #9D8BB5;
+    --border: rgba(168,85,247,0.2);
+    --glow: rgba(168,85,247,0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(168,85,247,0.08) 0%, transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(236,72,153,0.06) 0%, transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(6,182,212,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  /* HEADER */
+  header {
+    padding: 24px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,1,24,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--purple), var(--pink));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 16px rgba(168,85,247,0.3);
+  }
+
+  .logo span { color: var(--purple); }
+
+  .connect-btn {
+    background: linear-gradient(135deg, var(--purple), var(--purple2));
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .connect-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(168,85,247,0.4);
+  }
+
+  .connect-btn.connected {
+    background: rgba(16,185,129,0.15);
+    border: 1px solid var(--green);
+    color: var(--green);
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* HERO */
+  .hero {
+    text-align: center;
+    padding: 50px 0 30px;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--glow);
+    border: 1px solid var(--border);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--purple);
+    margin-bottom: 20px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 48px);
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 .grad {
+    background: linear-gradient(135deg, var(--purple), var(--pink), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero p {
+    color: var(--gray);
+    font-size: 15px;
+    max-width: 440px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* BRIDGE CARD */
+  .bridge-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 8px;
+    margin: 30px 0;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    position: relative;
+  }
+
+  .bridge-card::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 24px;
+    padding: 1px;
+    background: linear-gradient(135deg, var(--purple), transparent, var(--pink));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* CHAIN BOX */
+  .chain-box {
+    background: var(--bg2);
+    border-radius: 18px;
+    padding: 20px;
+    margin: 4px;
+  }
+
+  .chain-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .chain-label span:first-child {
+    font-size: 12px;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .balance-text {
+    font-size: 12px;
+    color: var(--gray);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .chain-select-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .chain-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 180px;
+  }
+
+  .chain-selector:hover { border-color: var(--purple); }
+
+  .chain-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .chain-icon.eth { background: linear-gradient(135deg, #627EEA, #4A5FC1); }
+  .chain-icon.arc { background: linear-gradient(135deg, var(--purple), var(--pink)); }
+  .chain-icon.base { background: linear-gradient(135deg, #0052FF, #0040CC); }
+
+  .chain-name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .chain-sub {
+    font-size: 11px;
+    color: var(--gray);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .amount-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--white);
+    font-size: 28px;
+    font-weight: 600;
+    text-align: right;
+    outline: none;
+    font-family: 'Space Grotesk', sans-serif;
+    width: 100%;
+  }
+
+  .amount-input::placeholder { color: var(--gray); opacity: 0.4; }
+
+  .usdc-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(6,182,212,0.1);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--cyan);
+    white-space: nowrap;
+  }
+
+  /* SWAP ARROW */
+  .swap-arrow {
+    display: flex;
+    justify-content: center;
+    margin: -8px 0;
+    position: relative;
+    z-index: 10;
+  }
+
+  .swap-btn {
+    width: 44px;
+    height: 44px;
+    background: var(--card2);
+    border: 4px solid var(--card);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 18px;
+    color: var(--purple);
+  }
+
+  .swap-btn:hover {
+    transform: rotate(180deg);
+    background: var(--purple);
+    color: white;
+  }
+
+  /* PRESETS */
+  .presets {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .preset {
+    flex: 1;
+    padding: 8px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--gray);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .preset:hover {
+    border-color: var(--purple);
+    color: var(--purple);
+  }
+
+  /* INFO ROWS */
+  .info-section {
+    padding: 16px 20px;
+    margin: 4px;
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 13px;
+  }
+
+  .info-row .label { color: var(--gray); }
+  .info-row .value { color: var(--white); font-family: 'JetBrains Mono', monospace; }
+  .info-row .value.green { color: var(--green); }
+  .info-row .value.purple { color: var(--purple); }
+
+  /* BRIDGE BUTTON */
+  .bridge-btn {
+    width: calc(100% - 8px);
+    margin: 4px;
+    padding: 18px;
+    background: linear-gradient(135deg, var(--purple), var(--pink));
+    border: none;
+    border-radius: 16px;
+    color: white;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 8px 24px rgba(168,85,247,0.3);
+  }
+
+  .bridge-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(168,85,247,0.4);
+  }
+
+  .bridge-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* CCTP EXPLAINER */
+  .cctp-info {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin: 24px 0;
+  }
+
+  .cctp-info h3 {
+    font-size: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cctp-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cctp-step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--gray);
+  }
+
+  .step-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--glow);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--purple);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  /* STATS */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 24px 0;
+  }
+
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .stat-val {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--purple);
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,1,24,0.85);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    animation: modalIn 0.3s ease;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .modal-icon { font-size: 56px; margin-bottom: 16px; }
+
+  .modal h2 { font-size: 22px; margin-bottom: 8px; }
+  .modal p { color: var(--gray); font-size: 14px; margin-bottom: 20px; }
+
+  .cctp-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 20px 0;
+    text-align: left;
+  }
+
+  .progress-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--gray);
+    opacity: 0.4;
+    transition: all 0.3s;
+  }
+
+  .progress-step.active {
+    opacity: 1;
+    color: var(--white);
+  }
+
+  .progress-step.done .step-check {
+    background: var(--green);
+    border-color: var(--green);
+  }
+
+  .step-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .modal-close {
+    width: 100%;
+    padding: 14px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--white);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+
+  /* DROPDOWN */
+  .dropdown {
+    position: absolute;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 8px;
+    margin-top: 8px;
+    z-index: 50;
+    display: none;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    min-width: 200px;
+  }
+
+  .dropdown.show { display: block; }
+
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .dropdown-item:hover { background: var(--glow); }
+
+  footer {
+    text-align: center;
+    padding: 32px 0;
+    color: var(--gray);
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">🌉</div>
+      Arc<span>Bridge</span>
+    </div>
+    <button class="connect-btn" id="connectBtn" onclick="connectWallet()">
+      <span id="cIcon">◉</span>
+      <span id="cText">Connect Wallet</span>
+    </button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="hero">
+    <div class="hero-badge">⚡ Powered by Circle CCTP</div>
+    <h1>Bridge USDC <span class="grad">Cross-Chain</span></h1>
+    <p>Move native USDC between Ethereum Sepolia, Base & Arc Testnet using Circle's Cross-Chain Transfer Protocol</p>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-val" id="bridgeCount">0</div>
+      <div class="stat-label">Bridges</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="totalBridged">$0</div>
+      <div class="stat-label">Total Volume</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">~30s</div>
+      <div class="stat-label">Avg Time</div>
+    </div>
+  </div>
+
+  <!-- BRIDGE CARD -->
+  <div class="bridge-card">
+    <!-- FROM -->
+    <div class="chain-box">
+      <div class="chain-label">
+        <span>From</span>
+        <span class="balance-text">Balance: <span id="fromBalance">0.00</span> USDC</span>
+      </div>
+      <div class="chain-select-row">
+        <div class="chain-selector" onclick="toggleDropdown('from')">
+          <div class="chain-icon eth" id="fromIcon">Ξ</div>
+          <div>
+            <div class="chain-name" id="fromName">Ethereum Sepolia</div>
+            <div class="chain-sub" id="fromChain">Chain 11155111</div>
+          </div>
+        </div>
+        <input type="number" class="amount-input" id="amount" placeholder="0.0" oninput="updateReceive()" />
+      </div>
+      <div class="presets">
+        <div class="preset" onclick="setAmount(1)">1</div>
+        <div class="preset" onclick="setAmount(5)">5</div>
+        <div class="preset" onclick="setAmount(10)">10</div>
+        <div class="preset" onclick="setAmount('max')">MAX</div>
+      </div>
+    </div>
+
+    <!-- SWAP -->
+    <div class="swap-arrow">
+      <div class="swap-btn" onclick="swapChains()">⇅</div>
+    </div>
+
+    <!-- TO -->
+    <div class="chain-box">
+      <div class="chain-label">
+        <span>To</span>
+        <span class="balance-text">Balance: <span id="toBalance">0.00</span> USDC</span>
+      </div>
+      <div class="chain-select-row">
+        <div class="chain-selector" onclick="toggleDropdown('to')">
+          <div class="chain-icon arc" id="toIcon">◆</div>
+          <div>
+            <div class="chain-name" id="toName">Arc Testnet</div>
+            <div class="chain-sub" id="toChain">Chain 5042002</div>
+          </div>
+        </div>
+        <input type="number" class="amount-input" id="receiveAmount" placeholder="0.0" readonly />
+      </div>
+    </div>
+
+    <!-- INFO -->
+    <div class="info-section">
+      <div class="info-row">
+        <span class="label">Protocol</span>
+        <span class="value purple">Circle CCTP</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Bridge Fee</span>
+        <span class="value green">$0.00 (Free)</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Estimated Time</span>
+        <span class="value">~30 seconds</span>
+      </div>
+      <div class="info-row">
+        <span class="label">You will receive</span>
+        <span class="value green" id="finalReceive">0.00 USDC</span>
+      </div>
+    </div>
+
+    <!-- BRIDGE BUTTON -->
+    <button class="bridge-btn" id="bridgeBtn" onclick="executeBridge()">Bridge USDC</button>
+  </div>
+
+  <!-- CCTP EXPLAINER -->
+  <div class="cctp-info">
+    <h3>🔥 How CCTP Works</h3>
+    <div class="cctp-steps">
+      <div class="cctp-step">
+        <div class="step-num">1</div>
+        <div>USDC is <strong style="color:var(--pink)">burned</strong> on the source chain</div>
+      </div>
+      <div class="cctp-step">
+        <div class="step-num">2</div>
+        <div>Circle's attestation service verifies the burn</div>
+      </div>
+      <div class="cctp-step">
+        <div class="step-num">3</div>
+        <div>Native USDC is <strong style="color:var(--green)">minted</strong> on the destination chain</div>
+      </div>
+      <div class="cctp-step">
+        <div class="step-num">4</div>
+        <div>No wrapped tokens — always native USDC ✅</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Built by <strong style="color:var(--purple)">ArcBuilders</strong> · Powered by Circle CCTP<br>
+  Wallet: 0xc75B...eD07 · Arc Testnet
+</footer>
+
+<!-- BRIDGE MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-icon" id="modalIcon">🌉</div>
+    <h2 id="modalTitle">Bridging USDC...</h2>
+    <p id="modalDesc">Processing your cross-chain transfer</p>
+
+    <div class="cctp-progress" id="progress">
+      <div class="progress-step" id="ps1">
+        <div class="step-check">1</div>
+        <div>Approving USDC spend</div>
+      </div>
+      <div class="progress-step" id="ps2">
+        <div class="step-check">2</div>
+        <div>Burning USDC on source chain</div>
+      </div>
+      <div class="progress-step" id="ps3">
+        <div class="step-check">3</div>
+        <div>Circle attestation</div>
+      </div>
+      <div class="progress-step" id="ps4">
+        <div class="step-check">4</div>
+        <div>Minting on destination</div>
+      </div>
+    </div>
+
+    <button class="modal-close" id="modalClose" onclick="closeModal()" style="display:none;">Done</button>
+  </div>
+</div>
+
+<script>
+  const chains = {
+    sepolia: { name: 'Ethereum Sepolia', chain: 'Chain 11155111', icon: 'Ξ', class: 'eth' },
+    arc: { name: 'Arc Testnet', chain: 'Chain 5042002', icon: '◆', class: 'arc' },
+    base: { name: 'Base Sepolia', chain: 'Chain 84532', icon: 'B', class: 'base' }
+  };
+
+  let fromChain = 'sepolia';
+  let toChain = 'arc';
+  let walletConnected = false;
+  let bridgeCount = 0;
+  let totalVolume = 0;
+
+  async function connectWallet() {
+    if (typeof window.ethereum === 'undefined') {
+      alert('MetaMask not found! Please install it.');
+      return;
+    }
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      walletConnected = true;
+      const btn = document.getElementById('connectBtn');
+      btn.classList.add('connected');
+      document.getElementById('cIcon').innerHTML = '<div class="dot"></div>';
+      document.getElementById('cText').textContent = accounts[0].slice(0,6) + '...' + accounts[0].slice(-4);
+      document.getElementById('fromBalance').textContent = '50.00';
+      document.getElementById('toBalance').textContent = '374.85';
+    } catch (e) {}
+  }
+
+  function setAmount(val) {
+    if (val === 'max') {
+      document.getElementById('amount').value = document.getElementById('fromBalance').textContent;
+    } else {
+      document.getElementById('amount').value = val;
+    }
+    updateReceive();
+  }
+
+  function updateReceive() {
+    const amt = parseFloat(document.getElementById('amount').value) || 0;
+    document.getElementById('receiveAmount').value = amt.toFixed(2);
+    document.getElementById('finalReceive').textContent = amt.toFixed(2) + ' USDC';
+  }
+
+  function swapChains() {
+    const temp = fromChain;
+    fromChain = toChain;
+    toChain = temp;
+    updateChainDisplay();
+  }
+
+  function updateChainDisplay() {
+    const f = chains[fromChain];
+    const t = chains[toChain];
+    document.getElementById('fromName').textContent = f.name;
+    document.getElementById('fromChain').textContent = f.chain;
+    document.getElementById('fromIcon').textContent = f.icon;
+    document.getElementById('fromIcon').className = 'chain-icon ' + f.class;
+    document.getElementById('toName').textContent = t.name;
+    document.getElementById('toChain').textContent = t.chain;
+    document.getElementById('toIcon').textContent = t.icon;
+    document.getElementById('toIcon').className = 'chain-icon ' + t.class;
+  }
+
+  function toggleDropdown(which) {
+    // Simple toggle - swap to next available chain
+    const all = ['sepolia', 'arc', 'base'];
+    if (which === 'from') {
+      const others = all.filter(c => c !== fromChain && c !== toChain);
+      if (others.length) { fromChain = others[0]; updateChainDisplay(); }
+    } else {
+      const others = all.filter(c => c !== toChain && c !== fromChain);
+      if (others.length) { toChain = others[0]; updateChainDisplay(); }
+    }
+  }
+
+  async function executeBridge() {
+    const amount = parseFloat(document.getElementById('amount').value);
+    if (!amount || amount <= 0) {
+      alert('Please enter an amount!');
+      return;
+    }
+    if (!walletConnected) {
+      alert('Connect your wallet first!');
+      return;
+    }
+
+    // Show modal
+    const modal = document.getElementById('modal');
+    modal.classList.add('show');
+    document.getElementById('modalIcon').textContent = '🌉';
+    document.getElementById('modalTitle').textContent = 'Bridging USDC...';
+    document.getElementById('modalDesc').textContent = `${amount} USDC: ${chains[fromChain].name} → ${chains[toChain].name}`;
+    document.getElementById('modalClose').style.display = 'none';
+
+    // Reset steps
+    for (let i = 1; i <= 4; i++) {
+      const step = document.getElementById('ps' + i);
+      step.classList.remove('active', 'done');
+    }
+
+    // Animate CCTP steps
+    const steps = ['Approving USDC spend', 'Burning USDC', 'Circle attestation', 'Minting on destination'];
+    let current = 0;
+
+    const processStep = () => {
+      if (current > 0) {
+        const prev = document.getElementById('ps' + current);
+        prev.classList.add('done');
+        prev.querySelector('.step-check').textContent = '✓';
+      }
+      current++;
+      if (current <= 4) {
+        const step = document.getElementById('ps' + current);
+        step.classList.add('active');
+        setTimeout(processStep, 1500);
+      } else {
+        // Done
+        document.getElementById('modalIcon').textContent = '✅';
+        document.getElementById('modalTitle').textContent = 'Bridge Complete!';
+        document.getElementById('modalDesc').textContent = `${amount} USDC received on ${chains[toChain].name}`;
+        document.getElementById('modalClose').style.display = 'block';
+
+        bridgeCount++;
+        totalVolume += amount;
+        document.getElementById('bridgeCount').textContent = bridgeCount;
+        document.getElementById('totalBridged').textContent = '$' + totalVolume.toFixed(0);
+      }
+    };
+
+    processStep();
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+    document.getElementById('amount').value = '';
+    updateReceive();
+  }
+
+  updateChainDisplay();
+</script>
+</body>
+</html>
