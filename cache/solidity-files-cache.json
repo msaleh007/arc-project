@@ -364,6 +364,43 @@
       "imports": [],
       "versionPragmas": [],
       "artifacts": []
+    },
+    "C:\\Users\\Adeel Zafar\\arc-project\\contracts\\SimpleStaking.sol": {
+      "lastModificationDate": 1780260051506,
+      "contentHash": "ae1f42774d38d236723c0cd3c5052d35",
+      "sourceName": "contracts/SimpleStaking.sol",
+      "solcConfig": {
+        "version": "0.8.24",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IERC20",
+        "SimpleStaking"
+      ]
     }
   }
 }
